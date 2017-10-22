@@ -1,0 +1,9 @@
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\bin\Debug\InverseKinematics.exe.config
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\bin\Debug\InverseKinematics.exe
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\bin\Debug\InverseKinematics.pdb
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.csprojResolveAssemblyReference.cache
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.MainForm.resources
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.Properties.Resources.resources
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.csproj.GenerateResource.Cache
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.exe
+C:\Users\Martin\OneDrive\Dokumenty\UKAIN\MatModelovanie\InverseKinematics\InverseKinematics\obj\Debug\InverseKinematics.pdb
