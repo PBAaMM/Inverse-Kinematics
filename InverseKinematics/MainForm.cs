@@ -70,17 +70,35 @@ namespace InverseKinematics
         {
             seg1.show(e.Graphics);
             seg2.show(e.Graphics);
+        }
 
+        private float distance(float aX, float aY, float bX, float bY)
+        {
+            return Convert.ToSingle(Math.Sqrt((Math.Pow(bX - aX, 2) + Math.Pow(bY - aY, 2))));
         }
 
         private void find(Segment seg, float ex, float ey)
         {
+            float distanceAX = distance(seg.a.x, seg.a.y, ex, ey);
+            float distanceXB = distance(ex, ey, seg.b.x, seg.b.y);
+            float distanceAB = distance(seg.a.x, seg.a.y, seg.b.x, seg.b.y);
 
-            for (int i = 0; i < seg.children.Count; i++)
+            
+            Console.WriteLine(Convert.ToString(distanceAX));
+            Console.WriteLine(Convert.ToString(distanceXB));
+            Console.WriteLine(Convert.ToString(Convert.ToInt32(distanceAB)));
+            Console.WriteLine(Convert.ToString(Convert.ToInt32(distanceAX + distanceXB)));
+            int cross = Convert.ToInt32(distanceAB) - Convert.ToInt32(distanceAX + distanceXB);
+            if (Math.Abs(cross) < 1)
+            {
+                Console.WriteLine("YES");
+            }
+
+            /*for (int i = 0; i < seg.children.Count; i++)
             {
                 Segment child = (Segment) seg.children[i];
                 find(child, ex, ey);
-            }
+            }*/
         }
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
@@ -152,9 +170,6 @@ namespace InverseKinematics
                         current.children.Add(child);
                         child.show(g);
                     }
-
-
-
                 }
                 else
                 {
