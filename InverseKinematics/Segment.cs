@@ -72,9 +72,9 @@ namespace InverseKinematics
             calculateB();
         }
 
-        public void show(Graphics g)
+        public void show(Graphics g, Color color)
         {
-            Pen pen = new Pen(Color.Black, WIDTH);
+            Pen pen = new Pen(color, WIDTH);
             g.DrawLine(pen, a.x, a.y, b.x, b.y);
             g.FillEllipse(Brushes.Red, a.x - 5, a.y - 5, 10, 10);
 
