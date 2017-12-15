@@ -34,6 +34,9 @@
             this.forward_kinematics = new System.Windows.Forms.Button();
             this.inverse_kinematics = new System.Windows.Forms.Button();
             this.status_bar = new System.Windows.Forms.StatusBar();
+            this.load_skeleton = new System.Windows.Forms.Button();
+            this.clear = new System.Windows.Forms.Button();
+            this.save_skeleton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // timer1
@@ -44,7 +47,7 @@
             // 
             // skeleton_creation
             // 
-            this.skeleton_creation.Location = new System.Drawing.Point(34, 310);
+            this.skeleton_creation.Location = new System.Drawing.Point(7, 82);
             this.skeleton_creation.Name = "skeleton_creation";
             this.skeleton_creation.Size = new System.Drawing.Size(108, 23);
             this.skeleton_creation.TabIndex = 0;
@@ -54,9 +57,9 @@
             // 
             // forward_kinematics
             // 
-            this.forward_kinematics.Location = new System.Drawing.Point(238, 310);
+            this.forward_kinematics.Location = new System.Drawing.Point(7, 155);
             this.forward_kinematics.Name = "forward_kinematics";
-            this.forward_kinematics.Size = new System.Drawing.Size(111, 23);
+            this.forward_kinematics.Size = new System.Drawing.Size(108, 23);
             this.forward_kinematics.TabIndex = 1;
             this.forward_kinematics.Text = "Forward Kinematics";
             this.forward_kinematics.UseVisualStyleBackColor = true;
@@ -64,9 +67,9 @@
             // 
             // inverse_kinematics
             // 
-            this.inverse_kinematics.Location = new System.Drawing.Point(438, 310);
+            this.inverse_kinematics.Location = new System.Drawing.Point(7, 184);
             this.inverse_kinematics.Name = "inverse_kinematics";
-            this.inverse_kinematics.Size = new System.Drawing.Size(106, 23);
+            this.inverse_kinematics.Size = new System.Drawing.Size(108, 23);
             this.inverse_kinematics.TabIndex = 2;
             this.inverse_kinematics.Text = "Inverse Kinematics";
             this.inverse_kinematics.UseVisualStyleBackColor = true;
@@ -79,17 +82,50 @@
             this.status_bar.Size = new System.Drawing.Size(584, 22);
             this.status_bar.TabIndex = 3;
             // 
+            // load_skeleton
+            // 
+            this.load_skeleton.Location = new System.Drawing.Point(7, 7);
+            this.load_skeleton.Name = "load_skeleton";
+            this.load_skeleton.Size = new System.Drawing.Size(108, 23);
+            this.load_skeleton.TabIndex = 4;
+            this.load_skeleton.Text = "Load Skeleton";
+            this.load_skeleton.UseVisualStyleBackColor = true;
+            this.load_skeleton.Click += new System.EventHandler(this.load_skeleton_Click);
+            // 
+            // clear
+            // 
+            this.clear.Location = new System.Drawing.Point(7, 111);
+            this.clear.Name = "clear";
+            this.clear.Size = new System.Drawing.Size(108, 23);
+            this.clear.TabIndex = 5;
+            this.clear.Text = "Clear";
+            this.clear.UseVisualStyleBackColor = true;
+            this.clear.Click += new System.EventHandler(this.clear_Click);
+            // 
+            // save_skeleton
+            // 
+            this.save_skeleton.Location = new System.Drawing.Point(7, 36);
+            this.save_skeleton.Name = "save_skeleton";
+            this.save_skeleton.Size = new System.Drawing.Size(108, 23);
+            this.save_skeleton.TabIndex = 6;
+            this.save_skeleton.Text = "Save Skeleton";
+            this.save_skeleton.UseVisualStyleBackColor = true;
+            this.save_skeleton.Click += new System.EventHandler(this.save_skeleton_Click_1);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.save_skeleton);
+            this.Controls.Add(this.clear);
+            this.Controls.Add(this.load_skeleton);
             this.Controls.Add(this.status_bar);
             this.Controls.Add(this.inverse_kinematics);
             this.Controls.Add(this.forward_kinematics);
             this.Controls.Add(this.skeleton_creation);
             this.Name = "MainForm";
-            this.Text = "Form1";
+            this.Text = "Inverse Kinematics";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainForm_Paint);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MainForm_MouseDown);
@@ -106,6 +142,9 @@
         private System.Windows.Forms.Button forward_kinematics;
         private System.Windows.Forms.Button inverse_kinematics;
         private System.Windows.Forms.StatusBar status_bar;
+        private System.Windows.Forms.Button load_skeleton;
+        private System.Windows.Forms.Button clear;
+        private System.Windows.Forms.Button save_skeleton;
     }
 }
 

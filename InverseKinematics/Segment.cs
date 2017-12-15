@@ -8,18 +8,22 @@ using System.Threading.Tasks;
 
 namespace InverseKinematics
 {
-    class Segment
+    [Serializable]
+    public class Segment
     {
         static int WIDTH = 5;
         public Vector2D a;
         public float len;
         public float angle;
         public float selfAngle;
+        public Color color = Color.Black;
 
         public Segment parent;
         public ArrayList children;
 
         public Vector2D b;
+
+        public bool is_last = false;
 
         public Segment(float x, float y, float len_, float angle_)
         {
@@ -44,6 +48,14 @@ namespace InverseKinematics
             children = new ArrayList();
         }
 
+        public void set_roots_angle_and_length(float angle, float len)
+        {
+            this.angle = angle;
+            this.selfAngle = angle;
+            this.len = len;
+            calculateB();
+        }
+
         public override string ToString()
         {
             return "Segment< A:(" + this.a.x + "," + this.a.y + ") Count: " + Convert.ToString(this.children.Count) + ">";
@@ -60,6 +72,7 @@ namespace InverseKinematics
         {
             selfAngle = selfAngle + 0.05f;
         }
+
 
         public void update()
         {
@@ -78,10 +91,18 @@ namespace InverseKinematics
             g.DrawLine(pen, a.x, a.y, b.x, b.y);
             g.FillEllipse(Brushes.Red, a.x - 5, a.y - 5, 10, 10);
 
-            if (children != null)
-            {
-                g.FillEllipse(Brushes.Red, b.x - 5, b.y - 5, 10, 10);
-            }
+            g.FillEllipse(Brushes.Red, b.x - 5, b.y - 5, 10, 10);
+
+        }
+
+        public void save()
+        {
+
+        }
+
+        public void load()
+        {
+
         }
 
         internal bool clicked(float ex, float ey)

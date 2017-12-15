@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace InverseKinematics
 {
     // A class to describe a two dimensional vector. 
-    class Vector2D
+    [Serializable]
+    public class Vector2D
     {
         public float x;
         public float y;
