@@ -25,14 +25,15 @@ namespace InverseKinematics
 
         public bool is_last = false;
 
+        // Constructors
         public Segment(float x, float y, float len_, float angle_)
         {
             a = new Vector2D(x, y);
             len = len_;
             angle = angle_;
-            calculateB();
             parent = null;
             children = new ArrayList();
+            calculateB();
         }
 
         public Segment(Segment parent_, float len_, float angle_)
@@ -42,17 +43,9 @@ namespace InverseKinematics
             len = len_;
             angle = angle_;
             selfAngle = angle;
-            calculateB();
-            
             parent_.children.Add(this);
             children = new ArrayList();
-        }
 
-        public void set_roots_angle_and_length(float angle, float len)
-        {
-            this.angle = angle;
-            this.selfAngle = angle;
-            this.len = len;
             calculateB();
         }
 
@@ -63,6 +56,8 @@ namespace InverseKinematics
 
         public void calculateB()
         {
+            // calculates automatically B by the length and the angle
+
             float dx = Convert.ToSingle(len * Math.Cos(angle));
             float dy = Convert.ToSingle(len * Math.Sin(angle));
             b = new Vector2D(a.x + dx, a.y + dy);
@@ -73,23 +68,18 @@ namespace InverseKinematics
             }
         }
 
-        public void move()
+        public void calculateBAndChangeChildrenA()
         {
-            selfAngle = selfAngle + 0.05f;
-        }
-
-
-        public void update()
-        {
-            angle = selfAngle;
-            if (parent != null)
-            {
-                a = new Vector2D(parent.b.x, parent.b.y);
-                angle += parent.angle;
-            }
+            // calculate B and changes children A point by the previous change - used in FK
             calculateB();
+
+            foreach (Segment item in this.children)
+            {
+                item.a = b;
+            }
         }
 
+        // repaints color of a segment
         public void show(Graphics g, Color color)
         {
             Pen pen = new Pen(color, WIDTH);
@@ -98,25 +88,6 @@ namespace InverseKinematics
 
             g.FillEllipse(Brushes.Red, b.x - 5, b.y - 5, 10, 10);
 
-        }
-
-        public void save()
-        {
-
-        }
-
-        public void load()
-        {
-
-        }
-
-        internal bool clicked(float ex, float ey)
-        {
-            bool result = false;
-
-            
-
-            return result;
         }
     }
 }

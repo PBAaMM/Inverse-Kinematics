@@ -26,7 +26,6 @@ namespace InverseKinematics
 
         public MainForm()
         {
-            //DoubleBuffered = true;
             InitializeComponent();
         }
 
@@ -47,20 +46,19 @@ namespace InverseKinematics
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
-        {        
+        {
             if (forward)
             {
                 if(selected1 != null)
                 {
-                    print($"DRAWING root {++n}");
                     draw(root, root.children);
                 }
             }
         }
-
+        
         public void draw(Segment node, ArrayList children)
         {
-            // recurse
+            // draws skeleton
             foreach (Segment child in children)
             {
                 g.DrawLine(new Pen(node.color, 5), node.a.x, node.a.y, child.a.x, child.a.y);
@@ -75,30 +73,25 @@ namespace InverseKinematics
             Console.WriteLine(Convert.ToString(o));
         }
 
-        /*static float Radians(float angle)
-        {
-            return (float)(Math.PI / 180) * angle;
-        }*/
-
         float CalculateAngle(float x1, float y1, float x2, float y2)
         {
+            // calculate angle when creating new segment
             var dx = x2 - x1;
             var dy = y2 - y1;
 
             var angleRadians = Math.Atan2(dy, dx);
-
-            //print($"UHOL {angleRadians}");
-
             return (float)angleRadians;
         }
 
         private float CalculateLength(float aX, float aY, float bX, float bY)
         {
+            // calculate length between 2 points
             return Convert.ToSingle(Math.Sqrt((Math.Pow(bX - aX, 2) + Math.Pow(bY - aY, 2))));
         }
 
         private void find_selected(ref Segment seg, float ex, float ey)
         {
+            // finds bone on which has been clicked
             float distanceAX = CalculateLength(seg.a.x, seg.a.y, ex, ey);
             float distanceXB = CalculateLength(ex, ey, seg.b.x, seg.b.y);
             float distanceAB = CalculateLength(seg.a.x, seg.a.y, seg.b.x, seg.b.y);
@@ -117,15 +110,11 @@ namespace InverseKinematics
                 Segment child = (Segment) seg.children[i];
                 find_selected(ref child, ex, ey);
             }
-
-            /*foreach (Segment child in seg.children)
-            {
-                find_selected(ref child, ex, ey);
-            }*/
         }
 
         private Segment create_next(Vector2D start, Vector2D end)
         {
+            // creates new segment in hierarchy
             float angle = CalculateAngle(start.x, start.y, end.x, end.y);
             float len = CalculateLength(start.x, start.y, end.x, end.y);
             return new Segment(start.x, start.y, len, angle);
@@ -269,7 +258,7 @@ namespace InverseKinematics
                         {
                             // apply IK
                             print("Folow e.X and e.Y");
-
+                            g.FillEllipse(Brushes.Green, e.X - 5, e.Y - 5, 10, 10);
                             reset_selected();
                         }
                     }
@@ -279,6 +268,7 @@ namespace InverseKinematics
 
         public void reset_selected()
         {
+            // resets used variables
             if(selected1 != null)
             {
                 selected1.show(g, Color.Black);
@@ -304,13 +294,12 @@ namespace InverseKinematics
                     if (selected1 != null)
                     {
                         // apply forward kinematics
-                        // print("Apply FK");
 
                         float a = CalculateAngle(selected1.a.x, selected1.a.y, e.X, e.Y);
                         float da = selected1.angle - a;
 
                         selected1.angle = a;
-                        selected1.calculateB();
+                        selected1.calculateBAndChangeChildrenA();
                         selected1.show(g, Color.Blue);
 
 
@@ -327,8 +316,7 @@ namespace InverseKinematics
                                 continue;
 
                             seg.angle -= da;
-                            seg.calculateB();
-                            seg.show(g, Color.Red);
+                            seg.calculateBAndChangeChildrenA();
 
                             foreach (Segment s in seg.children)
                             {
@@ -360,26 +348,19 @@ namespace InverseKinematics
             }
         }
 
-
-
-        // TIMER
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-        }
-
-
-
         // BUTTON EVENTS
         private void skeleton_creation_Click(object sender, EventArgs e)
         {
+            // change variables by the selected button - skelet creation
             creation = true;
             forward = false;
             inverse = false;
-            status_bar.Text = "Create skeleton by clicking. Select parent and click to end the new bone.";
+            status_bar.Text = "Create skeleton by clicking. Select parent and click elswhere to end the new bone.";
         }
 
         private void forward_kinematics_Click(object sender, EventArgs e)
         {
+            // change variables by the selected button - FK
             creation = false;
             forward = true;
             inverse = false;
@@ -388,6 +369,7 @@ namespace InverseKinematics
 
         private void inverse_kinematics_Click(object sender, EventArgs e)
         {
+            // change variables by the selected button - IK
             creation = false;
             forward = false;
             inverse = true;
@@ -396,6 +378,7 @@ namespace InverseKinematics
 
         private void clear_Click(object sender, EventArgs e)
         {
+            // cleares the skelet
             root = null;
             last = null;
             reset_selected();
@@ -406,6 +389,7 @@ namespace InverseKinematics
         // LOAD AND SAVE SKELETON BUTTONS
         private void load_skeleton_Click(object sender, EventArgs e)
         {
+            // loads skelet from the file if exists
             string fname = "skeleton.dat";
             if (File.Exists(fname))
             {
@@ -430,6 +414,7 @@ namespace InverseKinematics
 
         private void save_skeleton_Click_1(object sender, EventArgs e)
         {
+            // saves current skelet if existing
             if (root != null)
             {
                 FileStream s = new FileStream("skeleton.dat", FileMode.Create);
