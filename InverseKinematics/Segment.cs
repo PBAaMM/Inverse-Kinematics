@@ -66,6 +66,11 @@ namespace InverseKinematics
             float dx = Convert.ToSingle(len * Math.Cos(angle));
             float dy = Convert.ToSingle(len * Math.Sin(angle));
             b = new Vector2D(a.x + dx, a.y + dy);
+
+            foreach (Segment item in this.children)
+            {
+                item.a = b;
+            }
         }
 
         public void move()

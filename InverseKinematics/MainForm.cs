@@ -34,7 +34,7 @@ namespace InverseKinematics
         {
             Size = new Size(600, 400);
             g = CreateGraphics();
-            rnd = new Random();            
+            rnd = new Random();
 
             click = 0;
             clickOne = false;
@@ -178,7 +178,7 @@ namespace InverseKinematics
                                 clickOne = true;
                             }
                         }
-                        // add new bone to the selevted1
+                        // add new bone to the selected1
                         else
                         {
                             start.set(selected1.b.x, selected1.b.y);
@@ -191,12 +191,12 @@ namespace InverseKinematics
                             selected1.show(g, Color.Black);
                             selected1 = null;
 
-                            if(last != null)
+                            if (last != null)
                             {
                                 last.show(g, Color.Black);
                             }
                             last = child;
-                            
+
                             clickOne = false;
                         }
 
@@ -252,7 +252,7 @@ namespace InverseKinematics
                             {
                                 selected1.show(g, Color.Blue);
                                 clickOne = true;
-                            } 
+                            }
                         }
                         // find second selected bone
                         else if (!clickTwo)
@@ -263,7 +263,7 @@ namespace InverseKinematics
                             {
                                 selected2.show(g, Color.Blue);
                                 clickTwo = true;
-                            } 
+                            }
                         }
                         else
                         {
@@ -271,19 +271,26 @@ namespace InverseKinematics
                             print("Folow e.X and e.Y");
 
                             reset_selected();
-                        }                        
+                        }
                     }
                 }
             }
-            draw(root, root.children);
         }
 
         public void reset_selected()
         {
-            selected1.show(g, Color.Black);
-            selected2.show(g, Color.Black);
-            selected1 = null;
-            selected2 = null;
+            if(selected1 != null)
+            {
+                selected1.show(g, Color.Black);
+                selected1 = null;
+            }
+                
+            if(selected2 != null)
+            {
+                selected2.show(g, Color.Black);
+                selected2 = null;
+            }
+ 
             clickOne = false;
             clickTwo = false;
         }
@@ -296,35 +303,45 @@ namespace InverseKinematics
                 {
                     if (selected1 != null)
                     {
-                        // TODO: apply forward kinematics
-                        print("Apply FK");
+                        // apply forward kinematics
+                        // print("Apply FK");
 
-                        //print(selected1 + " " + Convert.ToString(e.X) + " " + Convert.ToString(e.Y));
-
-                        
                         float a = CalculateAngle(selected1.a.x, selected1.a.y, e.X, e.Y);
-                        print($"angle {a} ");
-                        print($"selected angle {selected1.angle} ");
-
                         float da = selected1.angle - a;
-                        print($"da {da} ");
 
-
-                        selected1.angle += 0.01f; //da % Radians(360);
+                        selected1.angle = a;
                         selected1.calculateB();
                         selected1.show(g, Color.Blue);
-                        Invalidate();
-                        //draw(selected1, selected1.children);
 
+
+                        Queue<Segment> q = new Queue<Segment>();
+                        foreach (Segment item in selected1.children)
+                        {
+                            q.Enqueue(item);
+                        }
+
+                        while (q.Count > 0)
+                        {
+                            Segment seg = q.Dequeue();
+                            if (seg.children.Count == 0)
+                                continue;
+
+                            seg.angle -= da;
+                            seg.calculateB();
+                            seg.show(g, Color.Red);
+
+                            foreach (Segment s in seg.children)
+                            {
+                                q.Enqueue(s);
+                            }
+                        }
+                        
+                        draw(selected1, selected1.children);
+                        Invalidate();
 
                     }
                 }
             }
-        }
-
-        public void change_segment()
-        {
-
         }
 
         private void MainForm_MouseUp(object sender, MouseEventArgs e)
@@ -335,6 +352,7 @@ namespace InverseKinematics
                 {
                     if (selected1 != null)
                     {
+                        selected1.show(g, Color.Black);
                         selected1 = null;
                     }
                     clickOne = false;
@@ -357,7 +375,7 @@ namespace InverseKinematics
             creation = true;
             forward = false;
             inverse = false;
-            status_bar.Text = "Create skeleton by clicking. Select parent and it's one child to create a new branch.";
+            status_bar.Text = "Create skeleton by clicking. Select parent and click to end the new bone.";
         }
 
         private void forward_kinematics_Click(object sender, EventArgs e)
@@ -379,8 +397,8 @@ namespace InverseKinematics
         private void clear_Click(object sender, EventArgs e)
         {
             root = null;
-            selected1 = null;
-            selected2 = null;
+            last = null;
+            reset_selected();
             Invalidate();
         }
 
@@ -400,7 +418,8 @@ namespace InverseKinematics
                 forward = false;
                 inverse = false;
 
-                draw(root, root.children);
+                current = root;
+                draw(current, current.children);
                 status_bar.Text = "Loaded succesfully!";
             }
             else
