@@ -17,9 +17,9 @@ namespace InverseKinematics
     public partial class MainForm : Form
     {
         Segment root, selected1, selected2, last, current;
-        bool clickOne, clickTwo, creation, forward, inverse;
+        bool clickOne, clickTwo, clickThree, creation, forward, inverse;
         int click;
-        Vector2D start, end;
+        Vector2D start, end, start_base;
         Graphics g;
         Random rnd;
         int n = 0;
@@ -41,6 +41,7 @@ namespace InverseKinematics
             creation = false;
             forward = false;
             inverse = false;
+            start_base = new Vector2D();
             start = new Vector2D();
             end = new Vector2D();
         }
@@ -54,17 +55,29 @@ namespace InverseKinematics
                     draw(root, root.children);
                 }
             }
+
+            if(root != null)
+                draw(root, root.children);
         }
         
         public void draw(Segment node, ArrayList children)
         {
             // draws skeleton
-            foreach (Segment child in children)
+            if (children.Count > 0)
             {
-                g.DrawLine(new Pen(node.color, 5), node.a.x, node.a.y, child.a.x, child.a.y);
-                draw(child, child.children);
+                foreach (Segment child in children)
+                {
+                    g.DrawLine(new Pen(node.color, 5), node.a.x, node.a.y, child.a.x, child.a.y);
+                    draw(child, child.children);
+                }
+                g.FillEllipse(Brushes.Red, node.a.x - 5, node.a.y - 5, 10, 10);
             }
-            g.FillEllipse(Brushes.Red, node.a.x - 5, node.a.y - 5, 10, 10);            
+            else
+            {
+                g.DrawLine(new Pen(node.color, 5), node.a.x, node.a.y, node.b.x, node.b.y);
+                g.FillEllipse(Brushes.Red, node.a.x - 5, node.a.y - 5, 10, 10);
+                g.FillEllipse(Brushes.Red, node.b.x - 5, node.b.y - 5, 10, 10);
+            }
         }
 
 
@@ -110,6 +123,29 @@ namespace InverseKinematics
                 Segment child = (Segment) seg.children[i];
                 find_selected(ref child, ex, ey);
             }
+        }
+
+        private Segment find_clicked(ref Segment seg, float ex, float ey)
+        {
+            // finds bone on which has been clicked
+            float distanceAX = CalculateLength(seg.a.x, seg.a.y, ex, ey);
+            float distanceXB = CalculateLength(ex, ey, seg.b.x, seg.b.y);
+            float distanceAB = CalculateLength(seg.a.x, seg.a.y, seg.b.x, seg.b.y);
+
+            int cross = Convert.ToInt32(distanceAB) - Convert.ToInt32(distanceAX + distanceXB);
+            if (Math.Abs(cross) < 2)
+            {
+                return seg;
+            }
+
+            for (int i = 0; i < seg.children.Count; i++)
+            {
+                Segment child = (Segment)seg.children[i];
+                Segment result = find_clicked(ref child, ex, ey);
+                if (result != null)
+                    return result;
+            }
+            return null;
         }
 
         private Segment create_next(Vector2D start, Vector2D end)
@@ -160,7 +196,9 @@ namespace InverseKinematics
                         if (!clickOne)
                         {
                             current = root;
-                            find_selected(ref current, e.X, e.Y);
+                            //find_selected(ref current, e.X, e.Y);
+                            selected1 = find_clicked(ref current, e.X, e.Y);
+
                             if (selected1 != null)
                             {
                                 selected1.show(g, Color.Blue);
@@ -174,18 +212,21 @@ namespace InverseKinematics
                             end.set(e.X, e.Y);
 
                             Segment child = create_next(start, end);
-                            child.show(g, Color.Orange);
-
+                            // set child's parent
+                            child.parent = selected1;
+                            // add child to parent's children
                             selected1.children.Add(child);
+                            // show them
                             selected1.show(g, Color.Black);
-                            selected1 = null;
-
+                            child.show(g, Color.Orange);
+                        
                             if (last != null)
                             {
                                 last.show(g, Color.Black);
                             }
                             last = child;
 
+                            selected1 = null;
                             clickOne = false;
                         }
 
@@ -259,7 +300,13 @@ namespace InverseKinematics
                             // apply IK
                             print("Folow e.X and e.Y");
                             g.FillEllipse(Brushes.Green, e.X - 5, e.Y - 5, 10, 10);
-                            reset_selected();
+
+                            start_base.set(selected1.a.x, selected1.a.y);
+
+                            print("GAAGAG");
+
+                            clickThree = true;
+                            //reset_selected();
                         }
                     }
                 }
@@ -283,6 +330,7 @@ namespace InverseKinematics
  
             clickOne = false;
             clickTwo = false;
+            clickThree = false;
         }
 
         private void MainForm_MouseMove(object sender, MouseEventArgs e)
@@ -330,6 +378,61 @@ namespace InverseKinematics
                     }
                 }
             }
+            if (inverse)
+            {
+                if(clickThree)
+                {
+
+                    // follow mouse 
+                    current = selected2;
+                    current.follow(e.X, e.Y);
+                    while (true)
+                    {
+                        //print(current);
+                        
+                        if ((current.a.x == selected1.a.x && current.a.y == selected1.a.y) &&
+                            (current.b.x == selected1.b.x && current.b.y == selected1.b.y))
+                        {
+                            break;
+                        }
+
+                        current.parent.follow(current.a.x, current.a.y);
+                        current = current.parent;
+                        
+                    }
+                    // move it back
+
+                    
+
+                    current = selected1;
+                    selected1.setA(start_base);
+                    while (true)
+                    {
+                        //print(current);
+
+                        if ((current.a.x == selected2.a.x && current.a.y == selected2.a.y) &&
+                            (current.b.x == selected2.b.x && current.b.y == selected2.b.y))
+                        {
+                            break;
+                        }
+
+                        current.setA(start_base);
+                        current = current.parent;
+
+                    }
+
+                    Invalidate();
+                }
+
+            }
+
+            /*if(root != null)
+            {
+                print("ASFASF");
+                root.follow(e.X, e.Y);
+                //root.show(g, Color.Black);
+                Invalidate();
+            }*/
         }
 
         private void MainForm_MouseUp(object sender, MouseEventArgs e)
@@ -378,6 +481,10 @@ namespace InverseKinematics
 
         private void clear_Click(object sender, EventArgs e)
         {
+            creation = true;
+            forward = false;
+            inverse = false;
+
             // cleares the skelet
             root = null;
             last = null;

@@ -51,7 +51,7 @@ namespace InverseKinematics
 
         public override string ToString()
         {
-            return "Segment< A:(" + this.a.x + "," + this.a.y + ") Count: " + Convert.ToString(this.children.Count) + ">";
+            return "Segment< A:(" + this.a.x + "," + this.a.y + ") B:(" + this.b.x + "," + this.b.y +") Children: " + Convert.ToString(this.children.Count) + ">";
         }
 
         public void calculateB()
@@ -68,6 +68,11 @@ namespace InverseKinematics
             }
         }
 
+        public void setA(Vector2D start_base) {
+            a = start_base;
+            //calculateB();
+        }
+
         public void calculateBAndChangeChildrenA()
         {
             // calculate B and changes children A point by the previous change - used in FK
@@ -77,6 +82,28 @@ namespace InverseKinematics
             {
                 item.a = b;
             }
+        }
+
+        public void follow(float tx, float ty)
+        {
+            // rotate to mouse 
+            Vector2D target = new Vector2D(tx, ty);
+            Vector2D dir = Vector2D.sub(target, a);
+
+            // heading
+            angle =  -1 * (float)Math.Atan2(-dir.y, dir.x);
+
+            // set magnitude
+            dir.normalize();
+            dir.mult(len);
+
+            // mult -1
+            dir.mult(-1);
+            
+            // add target to dir
+            a = Vector2D.add(target, dir);
+
+            calculateB();
         }
 
         // repaints color of a segment
