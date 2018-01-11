@@ -48,15 +48,7 @@ namespace InverseKinematics
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
         {
-            if (forward)
-            {
-                if(selected1 != null)
-                {
-                    draw(root, root.children);
-                }
-            }
-
-            if(root != null)
+            if (root != null)
                 draw(root, root.children);
         }
         
@@ -333,6 +325,16 @@ namespace InverseKinematics
             clickThree = false;
         }
 
+        private float DegreeToRadian(float angle)
+        {
+            return Convert.ToSingle(Math.PI * angle / 180.0);
+        }
+
+        private float RadianToDegree(float angle)
+        {
+            return Convert.ToSingle(angle * (180.0 / Math.PI));
+        }
+
         private void MainForm_MouseMove(object sender, MouseEventArgs e)
         {
             if (forward)
@@ -346,35 +348,69 @@ namespace InverseKinematics
                         float a = CalculateAngle(selected1.a.x, selected1.a.y, e.X, e.Y);
                         float da = selected1.angle - a;
 
-                        selected1.angle = a;
-                        selected1.calculateBAndChangeChildrenA();
-                        selected1.show(g, Color.Blue);
+                        //selected1.angle = a;
+                        //selected1.calculateBAndChangeChildrenA();
+                        //selected1.show(g, Color.Blue);
 
 
-                        Queue<Segment> q = new Queue<Segment>();
-                        foreach (Segment item in selected1.children)
+
+
+                        /*foreach (Segment item in selected1.children)
                         {
                             q.Enqueue(item);
-                        }
+                        }*/
+
+                        float centerX = selected1.a.x;
+                        float centerY = selected1.a.y;
+
+                        var dx = e.X - centerX;
+                        var dy = e.Y - centerY;
+
+                        var angleRadians = Math.Atan2(dy, dx);
+
+                        var vysl_uhol = angleRadians - selected1.angle;
+
+                        Queue<Segment> q = new Queue<Segment>();
+                        q.Enqueue(selected1);
 
                         while (q.Count > 0)
                         {
                             Segment seg = q.Dequeue();
-                            if (seg.children.Count == 0)
-                                continue;
 
-                            seg.angle -= da;
-                            seg.calculateBAndChangeChildrenA();
+                            /*seg.angle -= da;
+                            seg.calculateBAndChangeChildrenA();*/
+
+                            float x1 = seg.b.x - centerX;
+                            float y1 = seg.b.y - centerY;
+
+                            // using rotation matrix
+                            float x2 = Convert.ToSingle(x1 * Math.Cos(vysl_uhol) - y1 * Math.Sin(vysl_uhol));
+                            float y2 = Convert.ToSingle(x1 * Math.Sin(vysl_uhol) + y1 * Math.Cos(vysl_uhol));
+
+                            seg.b.x = x2 + centerX;
+                            seg.b.y = y2 + centerY;
+
+
+                            var seg_dx = seg.b.x - seg.a.x;
+                            var seg_dy = seg.b.y - seg.a.y;
+
+                            var new_angle = Math.Atan2(seg_dy, seg_dx);
+                            seg.angle = Convert.ToSingle(new_angle);
+
+                            //seg.angle = CalculateAngle(seg.a.x, seg.a.y, seg.b.x, seg.b.y);
+                            //seg.calculateB();
+
+                            //break;
 
                             foreach (Segment s in seg.children)
                             {
+                                s.a.x = seg.b.x;
+                                s.a.y = seg.b.y;
+
                                 q.Enqueue(s);
                             }
-                        }
-                        
-                        draw(selected1, selected1.children);
+                        }                       
                         Invalidate();
-
                     }
                 }
             }
@@ -383,7 +419,7 @@ namespace InverseKinematics
                 if(clickThree)
                 {
 
-                    // follow mouse 
+                    /*// follow mouse 
                     current = selected2;
                     current.follow(e.X, e.Y);
                     while (true)
@@ -399,28 +435,11 @@ namespace InverseKinematics
                         current.parent.follow(current.a.x, current.a.y);
                         current = current.parent;
                         
-                    }
-                    // move it back
+                    }*/
+
+
 
                     
-
-                    current = selected1;
-                    selected1.setA(start_base);
-                    while (true)
-                    {
-                        //print(current);
-
-                        if ((current.a.x == selected2.a.x && current.a.y == selected2.a.y) &&
-                            (current.b.x == selected2.b.x && current.b.y == selected2.b.y))
-                        {
-                            break;
-                        }
-
-                        current.setA(start_base);
-                        current = current.parent;
-
-                    }
-
                     Invalidate();
                 }
 
