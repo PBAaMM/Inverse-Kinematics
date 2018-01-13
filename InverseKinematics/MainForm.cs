@@ -23,6 +23,8 @@ namespace InverseKinematics
         Graphics g;
         Random rnd;
         int n = 0;
+        List<Segment> chain;
+        float chain_length;
 
         public MainForm()
         {
@@ -34,6 +36,9 @@ namespace InverseKinematics
             Size = new Size(600, 400);
             g = CreateGraphics();
             rnd = new Random();
+
+            chain = new List<Segment>();
+            chain_length = 0;
 
             click = 0;
             clickOne = false;
@@ -295,7 +300,23 @@ namespace InverseKinematics
 
                             start_base.set(selected1.a.x, selected1.a.y);
 
-                            print("GAAGAG");
+                            current = selected2;
+                            //current.follow(e.X, e.Y);
+                            while (true)
+                            {
+                                chain_length += current.len;
+                                chain.Add(current);
+
+
+                                if ((current.a.x == selected1.a.x && current.a.y == selected1.a.y) &&
+                                    (current.b.x == selected1.b.x && current.b.y == selected1.b.y))
+                                {
+                                    break;
+                                }
+
+                                current = current.parent;
+                            }
+                            chain.Reverse();
 
                             clickThree = true;
                             //reset_selected();
@@ -418,28 +439,151 @@ namespace InverseKinematics
             {
                 if(clickThree)
                 {
+                    if(selected2.children.Count == 0)
+                    {                        
+                        float distance_target = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[0].a.x, 2) + Math.Pow(e.Y - chain[0].a.y, 2))));
 
-                    /*// follow mouse 
-                    current = selected2;
-                    current.follow(e.X, e.Y);
-                    while (true)
-                    {
-                        //print(current);
-                        
-                        if ((current.a.x == selected1.a.x && current.a.y == selected1.a.y) &&
-                            (current.b.x == selected1.b.x && current.b.y == selected1.b.y))
+                        if (chain_length <= distance_target)
                         {
-                            break;
+                            foreach(Segment seg in chain)
+                            {
+                                float centerX = seg.a.x;
+                                float centerY = seg.a.y;
+
+                                var dx = e.X - centerX;
+                                var dy = e.Y - centerY;
+
+                                var new_angle = Math.Atan2(dy, dx);
+                                var vysl_uhol = new_angle - seg.angle;
+
+                                Queue<Segment> q = new Queue<Segment>();
+                                q.Enqueue(seg);
+
+                                while (q.Count > 0)
+                                {
+                                    Segment s = q.Dequeue();
+
+                                    float x1 = s.b.x - centerX;
+                                    float y1 = s.b.y - centerY;
+
+                                    // using rotation matrix
+                                    float x2 = Convert.ToSingle(x1 * Math.Cos(vysl_uhol) - y1 * Math.Sin(vysl_uhol));
+                                    float y2 = Convert.ToSingle(x1 * Math.Sin(vysl_uhol) + y1 * Math.Cos(vysl_uhol));
+
+                                    s.b.x = x2 + centerX;
+                                    s.b.y = y2 + centerY;
+
+                                    var seg_dx = s.b.x - s.a.x;
+                                    var seg_dy = s.b.y - s.a.y;
+
+                                    var s_new_angle = Math.Atan2(seg_dy, seg_dx);
+                                    s.angle = Convert.ToSingle(s_new_angle);
+
+                                    foreach (Segment child in s.children)
+                                    {
+                                        child.a.x = s.b.x;
+                                        child.a.y = s.b.y;
+
+                                        q.Enqueue(child);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            float centerX = chain[0].a.x;
+                            float centerY = chain[0].a.y;
+
+                            float distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].a.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].a.y, 2))));
+                            int error = 1;
+                            int iterations = 20;
+
+                             while (distance > error && iterations != 0)
+                             {
+                                chain[chain.Count - 1].b.x = e.X;
+                                chain[chain.Count - 1].b.y = e.Y;
+
+                                for (int i = chain.Count; (i--) > 0;)
+                                {                                    
+                                    Segment s1 = chain[i];
+                                    float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
+
+                                    float d = dis - s1.len;
+
+                                    s1.a.x = s1.a.x + ((s1.b.x - s1.a.x) / dis * d);
+                                    s1.a.y = s1.a.y + ((s1.b.y - s1.a.y) / dis * d);
+
+                                    if(s1.parent != null)
+                                    {
+                                        s1.parent.b.x = s1.a.x;
+                                        s1.parent.b.y = s1.a.y;
+                                    }
+
+                                    //var dx = s1.b.x - s1.a.x;
+                                    //var dy = s1.b.y - s1.a.y;
+                                    //s1.angle = Convert.ToSingle(Math.Atan2(dy, dx));
+
+                                }
+                                
+                                chain[0].a.x = centerX;
+                                chain[0].a.y = centerY;
+
+                                for (int i = 0; i < chain.Count; i++)
+                                {
+                                    Segment s1 = chain[i];
+                                    float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
+
+                                    float d = dis - s1.len;
+
+                                    s1.b.x = s1.b.x + ((s1.b.x - s1.a.x) / dis * d);
+                                    s1.b.y = s1.b.y + ((s1.b.y - s1.a.y) / dis * d);
+
+                                    if(i + 1 < chain.Count)
+                                    {
+                                        chain[i+1].a.x = s1.b.x;
+                                        chain[i+1].a.y = s1.b.y;
+                                    }
+
+                                }
+
+                                /*for (int i = 1; i < chain.Count; i++)
+                                {
+                                    Segment s1 = chain[i];
+
+                                    if (s1.parent != null)
+                                    {
+                                        float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.a.x - s1.parent.a.x, 2) + Math.Pow(s1.a.y - s1.parent.a.y, 2))));
+
+                                        float d = dis - s1.parent.len;
+
+                                        s1.a.x = s1.a.x + ((s1.a.x - s1.parent.a.x) / dis * d);
+                                        s1.a.y = s1.a.y + ((s1.a.y - s1.parent.a.y) / dis * d);
+
+                                        s1.parent.b.x = s1.a.x;
+                                        s1.parent.b.y = s1.a.y;
+                                    }
+                                }*/
+
+                                distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].b.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].b.y, 2))));
+                                iterations -= 1;
+                             }
+
+                            /*foreach(Segment seg in chain)
+                            {
+                                var dx = seg.b.x - seg.a.x;
+                                var dy = seg.b.y - seg.a.y;
+                                seg.angle = Convert.ToSingle(Math.Atan2(dy, dx));
+                            }*/
                         }
 
-                        current.parent.follow(current.a.x, current.a.y);
-                        current = current.parent;
-                        
-                    }*/
+                    }
+                    else
+                    {
+                        //reset_selected();
+                        status_bar.Text = "Bad IK";
+                    }
 
 
-
-                    
                     Invalidate();
                 }
 
