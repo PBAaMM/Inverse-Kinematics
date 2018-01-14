@@ -29,6 +29,8 @@ namespace InverseKinematics
         public MainForm()
         {
             InitializeComponent();
+
+            save_skeleton.Hide();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -197,13 +199,14 @@ namespace InverseKinematics
                             selected1.children.Add(child);
                             // show them
                             selected1.color = Color.Black;
-                            child.color = Color.Orange;
+                            //child.color = Color.Orange;
                         
                             if (last != null)
                             {
                                 last.color = Color.Black;
                             }
                             last = child;
+                            last.color = Color.Orange;
 
                             selected1 = null;
                             clickOne = false;
@@ -700,7 +703,23 @@ namespace InverseKinematics
 
         private void help_Click(object sender, EventArgs e)
         {
-            string popis = "123 Skeleton obejct missing, please create skeleton object first. \n Skeleton obejct missing, please create skeleton object first. \n Skeleton obejct missing, please create skeleton object first. \n";
+            string popis = @"Pre načítanie pripraveneho skeletona kliknite na tlacidlo 'Load Skeleton'
+
+Vytváranie kostry - Kliknite na tlačidlo 'Skeleton Creation'
+    1. Ak neexistuje skeleton, pravím kliknutím do plochy vytvorite koreň a dalším klikom vytvoríte prvú kosť.
+    2. Ak existuje kosť, kliknutím do plochy sa vytvori nová kosť pre posledne pridanú kosť.
+    3. Kliknutím na kosť (označí sa na modro) možete vytvoríť pod-kosť oznacenej kosti.
+
+Forward Kinematics - Kliknite na tlačidlo 'Forward Kinematics'
+    1. Kliknite a tahajte kosť, na ktorú chcete aplikovať FK.
+
+Inverse Kinematics - Kliknite na tlačidlo 'Inverse Kinematics'
+    1. Kliknite na prvú (začiatočnú) kosť IK (mala by mať pod-kosť).
+    2. KLiknite na poslednú (koncovú) kosť IK (nemala by mať pod-kosť).
+    3. Kliknite mimo kosti a postuponosť kostí sa upravi podľa IK.
+
+Tlačidlom 'Clear' vymažete plochu";
+
             Prompt.ShowDialog(popis, "Návod na použitie");
         }
 
@@ -709,12 +728,12 @@ namespace InverseKinematics
             public static void ShowDialog(string text, string caption)
             {
                 Form prompt = new Form();
-                prompt.Width = 600;
-                prompt.Height = 300;
+                prompt.Width = 700;
+                prompt.Height = 400;
                 prompt.Text = caption;
 
-                Label textLabel = new Label() { Left = 50, Top = 20, Text = text , Font = new Font("Arial", 12) };
-                textLabel.MaximumSize = new Size(550, 0);
+                Label textLabel = new Label() { Left = 35, Top = 20, Text = text , Font = new Font("Arial", 12) };
+                textLabel.MaximumSize = new Size(650, 0);
                 textLabel.AutoSize = true;
 
                 prompt.Controls.Add(textLabel);
