@@ -697,5 +697,29 @@ namespace InverseKinematics
                 status_bar.Text = "Skeleton obejct missing, please create skeleton object first.";
             }
         }
+
+        private void help_Click(object sender, EventArgs e)
+        {
+            string popis = "123 Skeleton obejct missing, please create skeleton object first. \n Skeleton obejct missing, please create skeleton object first. \n Skeleton obejct missing, please create skeleton object first. \n";
+            Prompt.ShowDialog(popis, "Návod na použitie");
+        }
+
+        public static class Prompt
+        {
+            public static void ShowDialog(string text, string caption)
+            {
+                Form prompt = new Form();
+                prompt.Width = 600;
+                prompt.Height = 300;
+                prompt.Text = caption;
+
+                Label textLabel = new Label() { Left = 50, Top = 20, Text = text , Font = new Font("Arial", 12) };
+                textLabel.MaximumSize = new Size(550, 0);
+                textLabel.AutoSize = true;
+
+                prompt.Controls.Add(textLabel);
+                prompt.ShowDialog();
+            }
+        }
     }
 }

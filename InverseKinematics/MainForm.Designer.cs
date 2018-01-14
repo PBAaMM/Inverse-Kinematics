@@ -37,6 +37,7 @@
             this.load_skeleton = new System.Windows.Forms.Button();
             this.clear = new System.Windows.Forms.Button();
             this.save_skeleton = new System.Windows.Forms.Button();
+            this.help = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // timer1
@@ -111,11 +112,22 @@
             this.save_skeleton.UseVisualStyleBackColor = true;
             this.save_skeleton.Click += new System.EventHandler(this.save_skeleton_Click_1);
             // 
+            // help
+            // 
+            this.help.Location = new System.Drawing.Point(7, 231);
+            this.help.Name = "help";
+            this.help.Size = new System.Drawing.Size(108, 23);
+            this.help.TabIndex = 7;
+            this.help.Text = "Help";
+            this.help.UseVisualStyleBackColor = true;
+            this.help.Click += new System.EventHandler(this.help_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 561);
+            this.Controls.Add(this.help);
             this.Controls.Add(this.save_skeleton);
             this.Controls.Add(this.clear);
             this.Controls.Add(this.load_skeleton);
@@ -123,6 +135,7 @@
             this.Controls.Add(this.inverse_kinematics);
             this.Controls.Add(this.forward_kinematics);
             this.Controls.Add(this.skeleton_creation);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.Text = "Inverse Kinematics";
             this.Load += new System.EventHandler(this.MainForm_Load);
@@ -144,6 +157,7 @@
         private System.Windows.Forms.Button load_skeleton;
         private System.Windows.Forms.Button clear;
         private System.Windows.Forms.Button save_skeleton;
+        private System.Windows.Forms.Button help;
     }
 }
 
