@@ -8,7 +8,11 @@ using System.IO;
 
 namespace InverseKinematics
 {
+    /// <summary>
+    /// Manages save and load functions that saves data into file
+    /// </summary>
     class SaveLoadManager
+    
     {
         MainForm mainform;
         string path;
@@ -30,6 +34,7 @@ namespace InverseKinematics
 
         public Segment load()
         {
+            // loads root if file in path existing
             if (File.Exists(path))
             {
                 FileStream s = new FileStream(path, FileMode.Open);

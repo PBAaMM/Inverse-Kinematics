@@ -327,7 +327,6 @@ namespace InverseKinematics
                         else
                         {
                             // apply IK
-                            print("Folow e.X and e.Y");
                             g.FillEllipse(Brushes.Green, e.X - 5, e.Y - 5, 10, 10);
 
                             if (selected2.children.Count == 0)
@@ -355,6 +354,7 @@ namespace InverseKinematics
             float distance_target = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[0].a.x, 2) + Math.Pow(e.Y - chain[0].a.y, 2))));
             origin_bones = new List<Segment>(chain);
 
+            // ak nedociahne na target tak uplne vystrie ruku
             if (chain_length <= distance_target)
             {
                 foreach (Segment seg in chain)
@@ -401,6 +401,7 @@ namespace InverseKinematics
                     }
                 }
             }
+            // ak dociahne na target
             else
             {
                 float centerX = chain[0].a.x;
@@ -410,11 +411,14 @@ namespace InverseKinematics
                 int error = 1;
                 int iterations = 20;
 
+                // upravi vsetky kosti pomocou metody FABRIC - http://wiki.roblox.com/index.php?title=Inverse_kinematics
                 while (distance > error && iterations != 0)
                 {
+                    // posledneho posunie do targetu
                     chain[chain.Count - 1].b.x = e.X;
                     chain[chain.Count - 1].b.y = e.Y;
 
+                    // od zadu prejde retaz od poslednej kosti a zmeni ostane kosti az po prvu
                     for (int i = chain.Count; (i--) > 0;)
                     {
                         Segment s1 = chain[i];
@@ -431,6 +435,8 @@ namespace InverseKinematics
                             s1.parent.b.y = s1.a.y;
                         }
                     }
+
+                    // prejde od prveho do koniec a upravi kosti pomocou FABRIC 
                     chain[0].a.x = centerX;
                     chain[0].a.y = centerY;
 
@@ -690,6 +696,8 @@ namespace InverseKinematics
 
         private void save_skeleton_Click_1(object sender, EventArgs e)
         {
+            // saves skeleton to file
+
             if (root != null)
             {
                sl_manager.save(root);
@@ -703,6 +711,7 @@ namespace InverseKinematics
 
         private void help_Click(object sender, EventArgs e)
         {
+            // shows project info
             string popis = @"Pre načítanie pripraveneho skeletona kliknite na tlacidlo 'Load Skeleton'
 
 Vytváranie kostry - Kliknite na tlačidlo 'Skeleton Creation'
@@ -723,6 +732,7 @@ Tlačidlom 'Clear' vymažete plochu";
             Prompt.ShowDialog(popis, "Návod na použitie");
         }
 
+        // class used for help prompt-ish windows
         public static class Prompt
         {
             public static void ShowDialog(string text, string caption)
