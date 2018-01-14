@@ -9,22 +9,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
+
 
 namespace InverseKinematics
 {
     public partial class MainForm : Form
     {
         Segment root, selected1, selected2, last, current;
-        bool clickOne, clickTwo, clickThree, creation, forward, inverse;
-        int click;
-        Vector2D start, end, start_base;
+        bool clickOne, clickTwo, creation, forward, inverse;
+        Vector2D start, end;
         Graphics g;
         Random rnd;
-        int n = 0;
         List<Segment> chain;
         float chain_length;
+        List<Segment> origin_bones;
+
+        SaveLoadManager sl_manager;
 
         public MainForm()
         {
@@ -33,22 +33,17 @@ namespace InverseKinematics
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            Size = new Size(600, 400);
             g = CreateGraphics();
             rnd = new Random();
 
-            chain = new List<Segment>();
+            sl_manager = new SaveLoadManager(this);
+                        
             chain_length = 0;
-
-            click = 0;
             clickOne = false;
             clickTwo = false;
             creation = false;
             forward = false;
             inverse = false;
-            start_base = new Vector2D();
-            start = new Vector2D();
-            end = new Vector2D();
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
@@ -164,41 +159,28 @@ namespace InverseKinematics
                 if (creation)
                 {
                     // root creation
-                    if (root == null)
+                    if (start == null)
                     {
-                        click += 1;
-                        // root start point when clicked first time
-                        if (click == 1)
-                        {
-                            start.set(e.X, e.Y);
-                            g.FillEllipse(Brushes.Red, start.x - 5, start.y - 5, 10, 10);
-                        }
-                        // root end point, when clicked second time, calculating angle and lenght
-                        else if (click == 2)
-                        {
-                            end.set(e.X, e.Y);
-                            root = create_next(start, end);
-
-                            g.DrawLine(new Pen(root.color, 5), root.a.x, root.a.y, root.b.x, root.b.y);
-                            g.FillEllipse(Brushes.Red, root.a.x - 5, root.a.y - 5, 10, 10);
-                            g.FillEllipse(Brushes.Red, root.b.x - 5, root.b.y - 5, 10, 10);
-
-                            last = root;
-                            click = 0;
-                        }
+                        start = new Vector2D(e.X, e.Y);
+                        root = new Segment(start.x, start.y, 0, 0);
                     }
-                    else
+                    else if (end == null)
+                    {
+                        end = new Vector2D(e.X, e.Y);
+                        root = create_next(start, end);
+                        last = root;
+                    }                    
+                    else if(root != null)
                     {
                         // find first selected bone
                         if (!clickOne)
                         {
                             current = root;
-                            //find_selected(ref current, e.X, e.Y);
                             selected1 = find_clicked(ref current, e.X, e.Y);
 
                             if (selected1 != null)
                             {
-                                selected1.show(g, Color.Blue);
+                                selected1.color = Color.Blue;
                                 clickOne = true;
                             }
                         }
@@ -214,12 +196,12 @@ namespace InverseKinematics
                             // add child to parent's children
                             selected1.children.Add(child);
                             // show them
-                            selected1.show(g, Color.Black);
-                            child.show(g, Color.Orange);
+                            selected1.color = Color.Black;
+                            child.color = Color.Orange;
                         
                             if (last != null)
                             {
-                                last.show(g, Color.Black);
+                                last.color = Color.Black;
                             }
                             last = child;
 
@@ -236,16 +218,17 @@ namespace InverseKinematics
                                 end.set(e.X, e.Y);
 
                                 Segment child = create_next(start, end);
-                                child.show(g, Color.Orange);
+                                child.color = Color.Orange;
                                 child.parent = last;
 
                                 last.children.Add(child);
-                                last.show(g, Color.Black);
+                                last.color = Color.Black;
                                 last = child;
                             }
                         }
                     }
                 }
+
                 // FORWARD KINEMATICS 
                 else if (forward)
                 {
@@ -258,13 +241,13 @@ namespace InverseKinematics
                             find_selected(ref current, e.X, e.Y);
                             if (selected1 != null)
                             {
-                                selected1.show(g, Color.Blue);
+                                selected1.color = Color.Blue;
                                 clickOne = true;
                             }
                         }
                     }
-
                 }
+
                 // INVERSE KINEMATICS 
                 else if (inverse)
                 {
@@ -277,8 +260,17 @@ namespace InverseKinematics
                             find_selected(ref current, e.X, e.Y);
                             if (selected1 != null)
                             {
-                                selected1.show(g, Color.Blue);
-                                clickOne = true;
+                                if (selected1.children.Count == 0)
+                                {
+                                    reset_selected();
+                                    status_bar.Text = "Bad IK sequence";
+                                }
+                                else
+                                {
+                                    selected1.color = Color.Blue;
+                                    clickOne = true;
+                                    status_bar.Text = "Select beginning and end of inverse kinematics sequence. Then click elsewhere to use IK.";
+                                }
                             }
                         }
                         // find second selected bone
@@ -288,8 +280,45 @@ namespace InverseKinematics
                             find_selected(ref current, e.X, e.Y);
                             if (selected2 != null)
                             {
-                                selected2.show(g, Color.Blue);
-                                clickTwo = true;
+                                selected2.color = Color.Blue;
+
+                                // create IK chain    
+                                chain = new List<Segment>();
+                                chain_length = 0;
+
+                                bool bad_IK = false;
+
+                                current = selected2;
+                                while (true)
+                                {
+                                    if(current == null)
+                                    {
+                                        
+                                        bad_IK = true;
+                                        break;
+                                    }
+                                    chain_length += current.len;
+                                    chain.Add(current);
+
+                                    if ((current.a.x == selected1.a.x && current.a.y == selected1.a.y) &&
+                                        (current.b.x == selected1.b.x && current.b.y == selected1.b.y))
+                                    {
+                                        break;
+                                    }
+
+                                    current = current.parent;
+                                }
+                                if (bad_IK)
+                                {
+                                    status_bar.Text = "Bad IK sequence";
+                                    reset_selected();
+                                }
+                                else
+                                {
+                                    chain.Reverse();
+                                    clickTwo = true;
+                                    status_bar.Text = "Select beginning and end of inverse kinematics sequence. Then click elsewhere to use IK.";
+                                }
                             }
                         }
                         else
@@ -298,32 +327,186 @@ namespace InverseKinematics
                             print("Folow e.X and e.Y");
                             g.FillEllipse(Brushes.Green, e.X - 5, e.Y - 5, 10, 10);
 
-                            start_base.set(selected1.a.x, selected1.a.y);
-
-                            current = selected2;
-                            //current.follow(e.X, e.Y);
-                            while (true)
+                            if (selected2.children.Count == 0)
                             {
-                                chain_length += current.len;
-                                chain.Add(current);
-
-
-                                if ((current.a.x == selected1.a.x && current.a.y == selected1.a.y) &&
-                                    (current.b.x == selected1.b.x && current.b.y == selected1.b.y))
-                                {
-                                    break;
-                                }
-
-                                current = current.parent;
+                                status_bar.Text = "Select beginning and end of inverse kinematics sequence. Then click elsewhere to use IK.";
+                                apply_IK(e);
                             }
-                            chain.Reverse();
+                            else
+                            {
+                                reset_selected();
+                                status_bar.Text = "Bad IK sequence";
+                            }
+                        }
+                    }
+                }
+                Invalidate();
+            }
+        }
 
-                            clickThree = true;
-                            //reset_selected();
+        public void apply_IK(MouseEventArgs e)
+        {
+
+            // apply inverse kinematics - IK
+
+            float distance_target = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[0].a.x, 2) + Math.Pow(e.Y - chain[0].a.y, 2))));
+            origin_bones = new List<Segment>(chain);
+
+            if (chain_length <= distance_target)
+            {
+                foreach (Segment seg in chain)
+                {
+                    float centerX = seg.a.x;
+                    float centerY = seg.a.y;
+
+                    var dx = e.X - centerX;
+                    var dy = e.Y - centerY;
+
+                    var new_angle = Math.Atan2(dy, dx);
+                    var vysl_uhol = new_angle - seg.angle;
+
+                    Queue<Segment> q = new Queue<Segment>();
+                    q.Enqueue(seg);
+
+                    while (q.Count > 0)
+                    {
+                        Segment s = q.Dequeue();
+
+                        float x1 = s.b.x - centerX;
+                        float y1 = s.b.y - centerY;
+
+                        // using rotation matrix
+                        float x2 = Convert.ToSingle(x1 * Math.Cos(vysl_uhol) - y1 * Math.Sin(vysl_uhol));
+                        float y2 = Convert.ToSingle(x1 * Math.Sin(vysl_uhol) + y1 * Math.Cos(vysl_uhol));
+
+                        s.b.x = x2 + centerX;
+                        s.b.y = y2 + centerY;
+
+                        var seg_dx = s.b.x - s.a.x;
+                        var seg_dy = s.b.y - s.a.y;
+
+                        var s_new_angle = Math.Atan2(seg_dy, seg_dx);
+                        s.angle = Convert.ToSingle(s_new_angle);
+
+                        foreach (Segment child in s.children)
+                        {
+                            child.a.x = s.b.x;
+                            child.a.y = s.b.y;
+
+                            q.Enqueue(child);
                         }
                     }
                 }
             }
+            else
+            {
+                float centerX = chain[0].a.x;
+                float centerY = chain[0].a.y;
+
+                float distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].a.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].a.y, 2))));
+                int error = 1;
+                int iterations = 20;
+
+                while (distance > error && iterations != 0)
+                {
+                    chain[chain.Count - 1].b.x = e.X;
+                    chain[chain.Count - 1].b.y = e.Y;
+
+                    for (int i = chain.Count; (i--) > 0;)
+                    {
+                        Segment s1 = chain[i];
+                        float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
+
+                        float d = dis - s1.len;
+
+                        s1.a.x = s1.a.x + ((s1.b.x - s1.a.x) / dis * d);
+                        s1.a.y = s1.a.y + ((s1.b.y - s1.a.y) / dis * d);
+
+                        if (s1.parent != null)
+                        {
+                            s1.parent.b.x = s1.a.x;
+                            s1.parent.b.y = s1.a.y;
+                        }
+                    }
+                    chain[0].a.x = centerX;
+                    chain[0].a.y = centerY;
+
+                    for (int i = 0; i < chain.Count; i++)
+                    {
+                        Segment s1 = chain[i];
+                        float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
+                        float d = dis - s1.len;
+
+                        s1.b.x = s1.b.x - ((s1.b.x - s1.a.x) / dis * d);
+                        s1.b.y = s1.b.y - ((s1.b.y - s1.a.y) / dis * d);
+
+                        if (i + 1 < chain.Count)
+                        {
+                            chain[i + 1].a.x = s1.b.x;
+                            chain[i + 1].a.y = s1.b.y;
+                        }
+                    }
+                    distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].b.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].b.y, 2))));
+                    iterations -= 1;
+                }
+
+                // uprava kosti co neboli v retazi ale maju parenta v retazi
+                for (int i = 1; i < chain.Count; i++)
+                {
+                    Segment seg = chain[i - 1];
+
+                    foreach (Segment child in seg.children)
+                    {
+                        if ((child != chain[i]))
+                        {
+                            float shift_x = chain[i - 1].b.x - origin_bones[i - 1].b.x;
+                            float shift_y = chain[i - 1].b.y - origin_bones[i - 1].b.y;
+
+                            Queue<Segment> queue = new Queue<Segment>();
+                            queue.Enqueue(child);
+                            while (queue.Count > 0)
+                            {
+                                Segment child_seg = queue.Dequeue();
+
+                                child_seg.b.x += shift_x;
+                                child_seg.b.y += shift_y;
+
+                                if (child_seg.parent != null)
+                                {
+                                    child_seg.a.x = child_seg.parent.b.x;
+                                    child_seg.a.y = child_seg.parent.b.y;
+                                }
+
+                                foreach (Segment ch_seg in child_seg.children)
+                                {
+                                    queue.Enqueue(ch_seg);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // prepocitanie ulhol vsetkym kostiam
+                current = root;
+                Queue<Segment> q = new Queue<Segment>();
+                q.Enqueue(current);
+
+                while (q.Count > 0)
+                {
+                    Segment s = q.Dequeue();
+
+                    var seg_dx = s.b.x - s.a.x;
+                    var seg_dy = s.b.y - s.a.y;
+
+                    var s_new_angle = Math.Atan2(seg_dy, seg_dx);
+                    s.angle = Convert.ToSingle(s_new_angle);
+
+                    foreach (Segment child in s.children)
+                    {
+                        q.Enqueue(child);
+                    }
+                }
+            }           
         }
 
         public void reset_selected()
@@ -331,29 +514,18 @@ namespace InverseKinematics
             // resets used variables
             if(selected1 != null)
             {
-                selected1.show(g, Color.Black);
+                selected1.color = Color.Black;
                 selected1 = null;
             }
                 
             if(selected2 != null)
             {
-                selected2.show(g, Color.Black);
+                selected2.color = Color.Black;
                 selected2 = null;
             }
  
             clickOne = false;
             clickTwo = false;
-            clickThree = false;
-        }
-
-        private float DegreeToRadian(float angle)
-        {
-            return Convert.ToSingle(Math.PI * angle / 180.0);
-        }
-
-        private float RadianToDegree(float angle)
-        {
-            return Convert.ToSingle(angle * (180.0 / Math.PI));
         }
 
         private void MainForm_MouseMove(object sender, MouseEventArgs e)
@@ -364,22 +536,10 @@ namespace InverseKinematics
                 {
                     if (selected1 != null)
                     {
-                        // apply forward kinematics
+                        // apply forward kinematics - FK
 
                         float a = CalculateAngle(selected1.a.x, selected1.a.y, e.X, e.Y);
                         float da = selected1.angle - a;
-
-                        //selected1.angle = a;
-                        //selected1.calculateBAndChangeChildrenA();
-                        //selected1.show(g, Color.Blue);
-
-
-
-
-                        /*foreach (Segment item in selected1.children)
-                        {
-                            q.Enqueue(item);
-                        }*/
 
                         float centerX = selected1.a.x;
                         float centerY = selected1.a.y;
@@ -398,9 +558,6 @@ namespace InverseKinematics
                         {
                             Segment seg = q.Dequeue();
 
-                            /*seg.angle -= da;
-                            seg.calculateBAndChangeChildrenA();*/
-
                             float x1 = seg.b.x - centerX;
                             float y1 = seg.b.y - centerY;
 
@@ -411,17 +568,11 @@ namespace InverseKinematics
                             seg.b.x = x2 + centerX;
                             seg.b.y = y2 + centerY;
 
-
                             var seg_dx = seg.b.x - seg.a.x;
                             var seg_dy = seg.b.y - seg.a.y;
 
                             var new_angle = Math.Atan2(seg_dy, seg_dx);
                             seg.angle = Convert.ToSingle(new_angle);
-
-                            //seg.angle = CalculateAngle(seg.a.x, seg.a.y, seg.b.x, seg.b.y);
-                            //seg.calculateB();
-
-                            //break;
 
                             foreach (Segment s in seg.children)
                             {
@@ -435,167 +586,6 @@ namespace InverseKinematics
                     }
                 }
             }
-            if (inverse)
-            {
-                if(clickThree)
-                {
-                    if(selected2.children.Count == 0)
-                    {                        
-                        float distance_target = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[0].a.x, 2) + Math.Pow(e.Y - chain[0].a.y, 2))));
-
-                        if (chain_length <= distance_target)
-                        {
-                            foreach(Segment seg in chain)
-                            {
-                                float centerX = seg.a.x;
-                                float centerY = seg.a.y;
-
-                                var dx = e.X - centerX;
-                                var dy = e.Y - centerY;
-
-                                var new_angle = Math.Atan2(dy, dx);
-                                var vysl_uhol = new_angle - seg.angle;
-
-                                Queue<Segment> q = new Queue<Segment>();
-                                q.Enqueue(seg);
-
-                                while (q.Count > 0)
-                                {
-                                    Segment s = q.Dequeue();
-
-                                    float x1 = s.b.x - centerX;
-                                    float y1 = s.b.y - centerY;
-
-                                    // using rotation matrix
-                                    float x2 = Convert.ToSingle(x1 * Math.Cos(vysl_uhol) - y1 * Math.Sin(vysl_uhol));
-                                    float y2 = Convert.ToSingle(x1 * Math.Sin(vysl_uhol) + y1 * Math.Cos(vysl_uhol));
-
-                                    s.b.x = x2 + centerX;
-                                    s.b.y = y2 + centerY;
-
-                                    var seg_dx = s.b.x - s.a.x;
-                                    var seg_dy = s.b.y - s.a.y;
-
-                                    var s_new_angle = Math.Atan2(seg_dy, seg_dx);
-                                    s.angle = Convert.ToSingle(s_new_angle);
-
-                                    foreach (Segment child in s.children)
-                                    {
-                                        child.a.x = s.b.x;
-                                        child.a.y = s.b.y;
-
-                                        q.Enqueue(child);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            float centerX = chain[0].a.x;
-                            float centerY = chain[0].a.y;
-
-                            float distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].a.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].a.y, 2))));
-                            int error = 1;
-                            int iterations = 20;
-
-                             while (distance > error && iterations != 0)
-                             {
-                                chain[chain.Count - 1].b.x = e.X;
-                                chain[chain.Count - 1].b.y = e.Y;
-
-                                for (int i = chain.Count; (i--) > 0;)
-                                {                                    
-                                    Segment s1 = chain[i];
-                                    float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
-
-                                    float d = dis - s1.len;
-
-                                    s1.a.x = s1.a.x + ((s1.b.x - s1.a.x) / dis * d);
-                                    s1.a.y = s1.a.y + ((s1.b.y - s1.a.y) / dis * d);
-
-                                    if(s1.parent != null)
-                                    {
-                                        s1.parent.b.x = s1.a.x;
-                                        s1.parent.b.y = s1.a.y;
-                                    }
-
-                                    //var dx = s1.b.x - s1.a.x;
-                                    //var dy = s1.b.y - s1.a.y;
-                                    //s1.angle = Convert.ToSingle(Math.Atan2(dy, dx));
-
-                                }
-                                
-                                chain[0].a.x = centerX;
-                                chain[0].a.y = centerY;
-
-                                for (int i = 0; i < chain.Count; i++)
-                                {
-                                    Segment s1 = chain[i];
-                                    float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.b.x - s1.a.x, 2) + Math.Pow(s1.b.y - s1.a.y, 2))));
-
-                                    float d = dis - s1.len;
-
-                                    s1.b.x = s1.b.x + ((s1.b.x - s1.a.x) / dis * d);
-                                    s1.b.y = s1.b.y + ((s1.b.y - s1.a.y) / dis * d);
-
-                                    if(i + 1 < chain.Count)
-                                    {
-                                        chain[i+1].a.x = s1.b.x;
-                                        chain[i+1].a.y = s1.b.y;
-                                    }
-
-                                }
-
-                                /*for (int i = 1; i < chain.Count; i++)
-                                {
-                                    Segment s1 = chain[i];
-
-                                    if (s1.parent != null)
-                                    {
-                                        float dis = Convert.ToSingle(Math.Sqrt((Math.Pow(s1.a.x - s1.parent.a.x, 2) + Math.Pow(s1.a.y - s1.parent.a.y, 2))));
-
-                                        float d = dis - s1.parent.len;
-
-                                        s1.a.x = s1.a.x + ((s1.a.x - s1.parent.a.x) / dis * d);
-                                        s1.a.y = s1.a.y + ((s1.a.y - s1.parent.a.y) / dis * d);
-
-                                        s1.parent.b.x = s1.a.x;
-                                        s1.parent.b.y = s1.a.y;
-                                    }
-                                }*/
-
-                                distance = Convert.ToSingle(Math.Sqrt((Math.Pow(e.X - chain[chain.Count - 1].b.x, 2) + Math.Pow(e.Y - chain[chain.Count - 1].b.y, 2))));
-                                iterations -= 1;
-                             }
-
-                            /*foreach(Segment seg in chain)
-                            {
-                                var dx = seg.b.x - seg.a.x;
-                                var dy = seg.b.y - seg.a.y;
-                                seg.angle = Convert.ToSingle(Math.Atan2(dy, dx));
-                            }*/
-                        }
-
-                    }
-                    else
-                    {
-                        //reset_selected();
-                        status_bar.Text = "Bad IK";
-                    }
-
-
-                    Invalidate();
-                }
-
-            }
-
-            /*if(root != null)
-            {
-                print("ASFASF");
-                root.follow(e.X, e.Y);
-                //root.show(g, Color.Black);
-                Invalidate();
-            }*/
         }
 
         private void MainForm_MouseUp(object sender, MouseEventArgs e)
@@ -606,18 +596,22 @@ namespace InverseKinematics
                 {
                     if (selected1 != null)
                     {
-                        selected1.show(g, Color.Black);
+                        selected1.color = Color.Black;
                         selected1 = null;
                     }
                     clickOne = false;
                 }
             }
+            Invalidate();
         }
 
         // BUTTON EVENTS
         private void skeleton_creation_Click(object sender, EventArgs e)
         {
             // change variables by the selected button - skelet creation
+            reset_selected();
+            Invalidate();
+
             creation = true;
             forward = false;
             inverse = false;
@@ -627,6 +621,9 @@ namespace InverseKinematics
         private void forward_kinematics_Click(object sender, EventArgs e)
         {
             // change variables by the selected button - FK
+            reset_selected();
+            Invalidate();
+
             creation = false;
             forward = true;
             inverse = false;
@@ -636,6 +633,9 @@ namespace InverseKinematics
         private void inverse_kinematics_Click(object sender, EventArgs e)
         {
             // change variables by the selected button - IK
+            reset_selected();
+            Invalidate();
+
             creation = false;
             forward = false;
             inverse = true;
@@ -648,9 +648,12 @@ namespace InverseKinematics
             forward = false;
             inverse = false;
 
-            // cleares the skelet
+            // cleares the skeleton
             root = null;
             last = null;
+            start = null;
+            end = null;
+
             reset_selected();
             Invalidate();
         }
@@ -660,38 +663,34 @@ namespace InverseKinematics
         private void load_skeleton_Click(object sender, EventArgs e)
         {
             // loads skelet from the file if exists
-            string fname = "skeleton.dat";
-            if (File.Exists(fname))
-            {
-                FileStream s = new FileStream(fname, FileMode.Open);
-                BinaryFormatter f = new BinaryFormatter();
-                root = f.Deserialize(s) as Segment;
-                s.Close();
 
+            root = sl_manager.load();
+            if (root != null)
+            {
                 creation = true;
                 forward = false;
                 inverse = false;
 
+                start = new Vector2D();
+                end = new Vector2D();
+
                 current = root;
                 draw(current, current.children);
                 status_bar.Text = "Loaded succesfully!";
+
             }
             else
             {
-                status_bar.Text = "Skeleton.dat file is missing, please save skeleton first.";
-            }            
+                status_bar.Text = "You haven't saved skeleton yet. Please save skeleton first.";
+            }
         }
 
         private void save_skeleton_Click_1(object sender, EventArgs e)
         {
-            // saves current skelet if existing
             if (root != null)
             {
-                FileStream s = new FileStream("skeleton.dat", FileMode.Create);
-                BinaryFormatter f = new BinaryFormatter();
-                f.Serialize(s, root);
-                s.Close();
-                status_bar.Text = "Saved!";
+               sl_manager.save(root);
+               status_bar.Text = "Saved!";
             }
             else
             {

@@ -76,9 +76,9 @@
             // 
             // status_bar
             // 
-            this.status_bar.Location = new System.Drawing.Point(0, 339);
+            this.status_bar.Location = new System.Drawing.Point(0, 539);
             this.status_bar.Name = "status_bar";
-            this.status_bar.Size = new System.Drawing.Size(584, 22);
+            this.status_bar.Size = new System.Drawing.Size(984, 22);
             this.status_bar.TabIndex = 3;
             // 
             // load_skeleton
@@ -115,7 +115,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(584, 361);
+            this.ClientSize = new System.Drawing.Size(984, 561);
             this.Controls.Add(this.save_skeleton);
             this.Controls.Add(this.clear);
             this.Controls.Add(this.load_skeleton);
